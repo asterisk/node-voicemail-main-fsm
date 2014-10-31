@@ -20,6 +20,26 @@ or add the following the your package.json file
 
 # Usage
 
+Create a voicemail main finite state machine instance:
+
+```JavaScript
+var channel; // channel instance
+var stasisStartEvent; // StasisStart event object (includes Stasis args)
+var dependencies = {
+  dal: dal, // voicemail data access layer
+  auth: auth, // voicemail authentication helper
+  mailbox: mailbox, // voicemail mailbox helper
+  prompt: prompt, // voicemail prompt helper
+  config: config // voicemail config helper
+};
+
+require('voicemail-main-fsm')(dependencies).create(stasisStartEvent, channel);
+```
+
+For more information on voicemail data access layer, see [voicemail-data](http://github.com/asterisk/node-voicemail-data). For more information on voicemail prompt, see [voicemail-prompt](http://github.com/asterisk/node-voicemail-prompt). For more information on voicemail config, see [voicemail-config](http://github.com/asterisk/node-voicemail-config). For more information on voicemail mailbox, see [voicemail-mailbox](http://github.com/asterisk/node-voicemail-mailbox). For more information on voicemail auth, see [voicemail-auth](http://github.com/asterisk/node-voicemail-auth);
+
+The finite state machine will drive the voicemail main application without the need for an external API to be programmed against it.
+
 # Development
 
 After cloning the git repository, run the following to install the module and all dev dependencies:
