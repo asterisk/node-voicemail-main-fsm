@@ -30,7 +30,8 @@ var dependencies = {
   auth: auth, // voicemail authentication helper
   mailbox: mailbox, // voicemail mailbox helper
   prompt: prompt, // voicemail prompt helper
-  config: config // voicemail config helper
+  config: config, // voicemail config helper
+  logger: logger // voicemail logging
 };
 
 require('voicemail-main-fsm')(dependencies).create(stasisStartEvent, channel);

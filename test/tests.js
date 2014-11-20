@@ -204,13 +204,32 @@ var getMockMailboxHelper = function() {
 };
 
 /**
+ * Returns a mock logger for testing.
+ */
+var getMockLogger = function() {
+  return {
+    child: function() {
+      return {
+        trace: function() {},
+        debug: function() {},
+        info: function() {},
+        warn: function() {},
+        error: function() {},
+        fatal: function() {}
+      };
+    }
+  };
+};
+
+/**
  * Returns a mock dependencies object for testing.
  */
 var getMockDependencies = function() {
   var dependencies = {
     config: getMockConfig(),
     auth: getMockAuth(),
-    mailbox: getMockMailboxHelper()
+    mailbox: getMockMailboxHelper(),
+    logger: getMockLogger()
   };
 
   return dependencies;
