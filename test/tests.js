@@ -87,13 +87,19 @@ var getMockConfig = function() {
         inputs: {
           mailboxReader: {
             waitingForAuth: {
-              regex: '\\d{4}',
-              action: 'authenticate'
+              regex: {
+                match: '\\d{4}',
+                action: 'authenticate'
+              }
             },
 
             changingFolder: {
-              regex: '.',
-              action: 'submit'
+              regex: {
+                match: '\\d',
+                action: 'submit'
+              },
+              '#': 'previousMenu',
+              '*': 'repeatMenu'
             },
 
             ready: {
@@ -102,7 +108,9 @@ var getMockConfig = function() {
               '4': 'prev',
               '5': 'replay',
               '6': 'next',
-              '7': 'delete'
+              '7': 'delete',
+              '#': 'previousMenu',
+              '*': 'repeatMenu'
             }
           }
         }
@@ -195,6 +203,14 @@ var getMockMailboxHelper = function() {
           }, asyncDelay);
 
           return defer.promise;
+        },
+
+        previousMenu: function() {
+          readerOperations.push('previousMenu');
+        },
+
+        repeatMenu: function() {
+          readerOperations.push('repeatMenu');
         }
       };
     }
@@ -335,6 +351,34 @@ var playPrevious = function() {
 
   setTimeout(function() {
     getMockClient().emit('ChannelDtmfReceived', {digit: '4'});
+    defer.resolve();
+  }, asyncDelay);
+
+  return defer.promise;
+};
+
+/**
+ * Send dtmf to return to previous menu.
+ */
+var goToPreviousMenu = function() {
+  var defer = Q.defer();
+
+  setTimeout(function() {
+    getMockClient().emit('ChannelDtmfReceived', {digit: '#'});
+    defer.resolve();
+  }, asyncDelay);
+
+  return defer.promise;
+};
+
+/**
+ * Send dtmf to repeat current menu.
+ */
+var repeatCurrentMenu = function() {
+  var defer = Q.defer();
+
+  setTimeout(function() {
+    getMockClient().emit('ChannelDtmfReceived', {digit: '*'});
     defer.resolve();
   }, asyncDelay);
 
@@ -589,6 +633,66 @@ describe('voicemail-main-fsm', function() {
     }
   });
 
+  it('should support going back to previous menu', function(done) {
+    var channel = getMockClient(true).getChannel();
+    var fsm = require('../lib/fsm.js')(getMockDependencies())
+      .create(getMockStartEvent(), channel);
+
+    authenticate(true)
+      .then(function() {
+        return goToPreviousMenu();
+      })
+      .then(function() {
+        checkSucess();
+      })
+      .done();
+
+    /**
+     * check to see if success criterias have been met
+     */
+    function checkSucess() {
+      setTimeout(function() {
+        var lastOperation = readerOperations.pop();
+
+        if (answered && authenticated && lastOperation === 'previousMenu') {
+          done();
+        } else {
+          checkSucess();
+        }
+      }, asyncDelay);
+    }
+  });
+
+  it('should support repeating current menu', function(done) {
+    var channel = getMockClient(true).getChannel();
+    var fsm = require('../lib/fsm.js')(getMockDependencies())
+      .create(getMockStartEvent(), channel);
+
+    authenticate(true)
+      .then(function() {
+        return repeatCurrentMenu();
+      })
+      .then(function() {
+        checkSucess();
+      })
+      .done();
+
+    /**
+     * check to see if success criterias have been met
+     */
+    function checkSucess() {
+      setTimeout(function() {
+        var lastOperation = readerOperations.pop();
+
+        if (answered && authenticated && lastOperation === 'repeatMenu') {
+          done();
+        } else {
+          checkSucess();
+        }
+      }, asyncDelay);
+    }
+  });
+
   it('should support deleting a message', function(done) {
     var channel = getMockClient(true).getChannel();
     var fsm = require('../lib/fsm.js')(getMockDependencies())
@@ -646,6 +750,80 @@ describe('voicemail-main-fsm', function() {
 
         if (answered && authenticated &&
             change === 'changeFolder' && submit === 'submitFolder') {
+          done();
+        } else {
+          checkSucess();
+        }
+      }, asyncDelay);
+    }
+  });
+
+  it('should support going back to previous menu while changing folder',
+        function(done) {
+
+    var channel = getMockClient(true).getChannel();
+    var fsm = require('../lib/fsm.js')(getMockDependencies())
+      .create(getMockStartEvent(), channel);
+
+    authenticate(true)
+      .then(function() {
+        return changeFolder();
+      })
+      .then(function() {
+        return goToPreviousMenu();
+      })
+      .then(function() {
+        checkSucess();
+      })
+      .done();
+
+    /**
+     * check to see if success criterias have been met
+     */
+    function checkSucess() {
+      setTimeout(function() {
+        var change = readerOperations[0];
+        var submit = readerOperations[1];
+
+        if (answered && authenticated &&
+            change === 'changeFolder' && submit === 'previousMenu') {
+          done();
+        } else {
+          checkSucess();
+        }
+      }, asyncDelay);
+    }
+  });
+
+  it('should support repeating current menu while changing folder',
+        function(done) {
+
+    var channel = getMockClient(true).getChannel();
+    var fsm = require('../lib/fsm.js')(getMockDependencies())
+      .create(getMockStartEvent(), channel);
+
+    authenticate(true)
+      .then(function() {
+        return changeFolder();
+      })
+      .then(function() {
+        return repeatCurrentMenu();
+      })
+      .then(function() {
+        checkSucess();
+      })
+      .done();
+
+    /**
+     * check to see if success criterias have been met
+     */
+    function checkSucess() {
+      setTimeout(function() {
+        var change = readerOperations[0];
+        var submit = readerOperations[1];
+
+        if (answered && authenticated &&
+            change === 'changeFolder' && submit === 'repeatMenu') {
           done();
         } else {
           checkSucess();
